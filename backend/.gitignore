@@ -1,0 +1,9 @@
+```
+**`.gitignore`** — new file
+```
+node_modules/
+.env
+uploads/
+*.log
+dist/
+.DS_Store

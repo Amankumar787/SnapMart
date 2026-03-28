@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+@import "tailwindcss";
+
+:root {
+  --yellow:  #FFD600;
+  --yellow2: #FFC107;
+  --dark:    #0D0B1F;
+  --dark2:   #1A1730;
+  --gray:    #B8B5CC;
+  --border:  rgba(255,255,255,0.1);
+  --surface: rgba(255,255,255,0.06);
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #0D0B1F;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0D0B1F; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
