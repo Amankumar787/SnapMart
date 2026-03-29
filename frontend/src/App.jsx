@@ -18,6 +18,9 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCoupons from "./pages/admin/AdminCoupons";
+import AdminProfile from "./pages/admin/AdminProfile";
+
+
 
 export default function App() {
   return (
@@ -46,6 +49,8 @@ export default function App() {
           <Route path="/admin/orders"   element={<AdminOrders />} />
           <Route path="/admin/users"    element={<AdminUsers />} />
           <Route path="/admin/coupons"  element={<AdminCoupons />} />
+          <Route path="/admin/profile" element={<AdminProfile />} />
+
         </Route>
       </Route>
     </Routes>

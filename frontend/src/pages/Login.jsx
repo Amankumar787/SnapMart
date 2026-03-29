@@ -10,9 +10,15 @@ export default function Login() {
   const navigate   = useNavigate();
   const { loading, error, user } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-    if (user) navigate("/");
-  }, [user, navigate]);
+useEffect(() => {
+  if (user) {
+    if (["admin", "superadmin"].includes(user.role)) {
+      navigate("/admin");
+    } else {
+      navigate("/");
+    }
+  }
+}, [user, navigate]);
 
   useEffect(() => {
     if (error) { toast.error(error); dispatch(clearError()); }
