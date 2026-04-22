@@ -24,8 +24,10 @@ const orderSchema = new mongoose.Schema(
     totalAmount:     { type: Number, required: true },
     discount:        { type: Number, default: 0 },
     paymentStatus:   { type: String, enum: ["pending", "paid", "failed", "refunded"], default: "pending" },
-    paymentMethod:   { type: String, enum: ["stripe", "cod"], default: "stripe" },
-    stripePaymentId: { type: String },
+    paymentMethod:   { type: String, enum: ["stripe", "razorpay", "cod"], default: "cod" }, // 👈 added razorpay & cod
+    stripePaymentId:    { type: String },
+    razorpayOrderId:    { type: String }, // 👈 added
+    razorpayPaymentId:  { type: String }, // 👈 added
     orderStatus:     { type: String, enum: ["placed", "confirmed", "processing", "shipped", "delivered", "cancelled"], default: "placed" },
     statusHistory:   [{ status: String, timestamp: { type: Date, default: Date.now }, note: String }],
     deliveredAt:     Date,

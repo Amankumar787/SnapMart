@@ -1,4 +1,5 @@
 const cloudinary = require("cloudinary").v2;
+const multer     = require("multer");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -6,17 +7,31 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadImage = async (filePath, folder = "snapmart") => {
-  const result = await cloudinary.uploader.upload(filePath, {
-    folder,
-    use_filename: true,
-    unique_filename: true,
+// store in memory, then stream to Cloudinary
+const storage = multer.memoryStorage();
+const upload  = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files allowed"), false);
+  },
+});
+
+const uploadImage = async (fileBuffer, folder = "snapmart") => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder, use_filename: true, unique_filename: true },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve({ url: result.secure_url, publicId: result.public_id });
+      }
+    ).end(fileBuffer);
   });
-  return { url: result.secure_url, publicId: result.public_id };
 };
 
 const deleteImage = async (publicId) => {
   await cloudinary.uploader.destroy(publicId);
 };
 
-module.exports = { uploadImage, deleteImage };
+module.exports = { upload, uploadImage, deleteImage };

@@ -3,6 +3,7 @@ const AppError = require("../utils/AppError");
 const { successResponse } = require("../utils/apiResponse");
 const { generateAccessToken, generateRefreshToken } = require("../utils/generateToken");
 const jwt = require("jsonwebtoken");
+const { sendWelcomeEmail } = require("../services/email"); // 👈 only change
 
 const register = async (req, res, next) => {
   try {
@@ -19,6 +20,12 @@ const register = async (req, res, next) => {
 
     const user = await User.create({ name, email, password });
 
+    try {
+      await sendWelcomeEmail({ email: user.email, name: user.name });
+    } catch (emailError) {
+      console.error("Welcome email failed:", emailError.message);
+    }
+
     const accessToken  = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
@@ -31,11 +38,12 @@ const register = async (req, res, next) => {
       refreshToken,
     });
   } catch (err) {
-    console.log("register error:", err)
+    console.log("register error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// ✅ these were missing — paste them back in
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;

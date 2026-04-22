@@ -21,38 +21,44 @@ import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminProfile from "./pages/admin/AdminProfile";
 
 
+import ChatWidget from "./components/ChatWidget"; // 👈 add this
+
+
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/"              element={<Home />} />
-      <Route path="/login"         element={<Login />} />
-      <Route path="/register"      element={<Register />} />
-      <Route path="/products"      element={<Products />} />
-      <Route path="/products/:id"  element={<ProductDetail />} />
+    <>
+      <Routes>
+        {/* Public */}
+        <Route path="/"              element={<Home />} />
+        <Route path="/login"         element={<Login />} />
+        <Route path="/register"      element={<Register />} />
+        <Route path="/products"      element={<Products />} />
+        <Route path="/products/:id"  element={<ProductDetail />} />
 
-      {/* Protected */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/cart"        element={<Cart />} />
-        <Route path="/checkout"    element={<Checkout />} />
-        <Route path="/orders"      element={<Orders />} />
-        <Route path="/orders/:id"  element={<OrderDetail />} />
-        <Route path="/profile"     element={<Profile />} />
-      </Route>
-
-      {/* Admin */}
-      <Route element={<ProtectedRoute adminOnly />}>
-        <Route element={<AdminLayout />}>
-          <Route path="/admin"          element={<AdminDashboard />} />
-          <Route path="/admin/products" element={<AdminProducts />} />
-          <Route path="/admin/orders"   element={<AdminOrders />} />
-          <Route path="/admin/users"    element={<AdminUsers />} />
-          <Route path="/admin/coupons"  element={<AdminCoupons />} />
-          <Route path="/admin/profile" element={<AdminProfile />} />
-
+        {/* Protected */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/cart"        element={<Cart />} />
+          <Route path="/checkout"    element={<Checkout />} />
+          <Route path="/orders"      element={<Orders />} />
+          <Route path="/orders/:id"  element={<OrderDetail />} />
+          <Route path="/profile"     element={<Profile />} />
         </Route>
-      </Route>
-    </Routes>
+
+        {/* Admin */}
+        <Route element={<ProtectedRoute adminOnly />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin"          element={<AdminDashboard />} />
+            <Route path="/admin/products" element={<AdminProducts />} />
+            <Route path="/admin/orders"   element={<AdminOrders />} />
+            <Route path="/admin/users"    element={<AdminUsers />} />
+            <Route path="/admin/coupons"  element={<AdminCoupons />} />
+            <Route path="/admin/profile"  element={<AdminProfile />} />
+          </Route>
+        </Route>
+      </Routes>
+
+      <ChatWidget /> {/* 👈 outside Routes, renders on every page */}
+    </>
   );
 }

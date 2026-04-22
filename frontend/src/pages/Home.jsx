@@ -186,7 +186,7 @@ export default function Home() {
             <div className="sale-card">
               <div style={{ position: "absolute", top: "-60px", right: "-60px", width: "180px", height: "180px", borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.4), transparent 70%)" }} />
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: "13px", fontWeight: 700, letterSpacing: "3px", color: "#B8B5CC", textTransform: "uppercase", marginBottom: "16px" }}>Limited Time</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: "88px", fontWeight: 800, lineHeight: 1, color: "#FFD600", letterSpacing: "-4px", textShadow: "0 0 60px rgba(255,214,0,0.3)" }}>50%</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: "80px", fontWeight: 800, lineHeight: 1, color: "#FFD600", letterSpacing: "-4px", textShadow: "0 0 60px rgba(255,214,0,0.3)" }}>50%</div>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: "28px", fontWeight: 700, color: "#fff", margin: "4px 0 24px", letterSpacing: "-1px" }}>OFF TODAY</div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "linear-gradient(135deg, #16a34a, #15803d)", color: "white", borderRadius: "99px", padding: "10px 24px", fontSize: "13px", fontWeight: 600, fontFamily: "'Syne', sans-serif", boxShadow: "0 4px 16px rgba(22,163,74,0.4)" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>

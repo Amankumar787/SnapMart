@@ -1,10 +1,18 @@
-const stripe = require("stripe")(process.env.STRIPE_SECRET);
-const Order  = require("../models/Order");
+const Razorpay = require("razorpay");
+const crypto   = require("crypto");
+const Order    = require("../models/Order");
+const User     = require("../models/User");
 const AppError = require("../utils/AppError");
 const { successResponse } = require("../utils/apiResponse");
+const { sendPaymentSuccess, sendPaymentFailed } = require("../services/email");
 
-// @route   POST /api/payments/create-intent
-const createPaymentIntent = async (req, res, next) => {
+const razorpay = new Razorpay({
+  key_id:     process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// @route   POST /api/payments/create-order
+const createRazorpayOrder = async (req, res, next) => {
   try {
     const { orderId } = req.body;
 
@@ -17,19 +25,19 @@ const createPaymentIntent = async (req, res, next) => {
     if (order.paymentStatus === "paid")
       return next(new AppError("Order already paid", 400, "ALREADY_PAID"));
 
-    // Amount in paise (INR) or cents (USD) — Stripe requires smallest unit
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Razorpay amount is in paise (1 INR = 100 paise)
+    const razorpayOrder = await razorpay.orders.create({
       amount:   Math.round(order.totalAmount * 100),
-      currency: "inr",
-      metadata: {
-        orderId:  order._id.toString(),
-        userId:   req.user._id.toString(),
-      },
+      currency: "INR",
+      receipt:  `receipt_${order._id}`,
+      notes:    { orderId: order._id.toString(), userId: req.user._id.toString() },
     });
 
-    successResponse(res, 200, "Payment intent created", {
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+    successResponse(res, 200, "Razorpay order created", {
+      razorpayOrderId: razorpayOrder.id,
+      amount:          razorpayOrder.amount,
+      currency:        razorpayOrder.currency,
+      keyId:           process.env.RAZORPAY_KEY_ID,
     });
   } catch (err) {
     next(err);
@@ -39,73 +47,41 @@ const createPaymentIntent = async (req, res, next) => {
 // @route   POST /api/payments/verify
 const verifyPayment = async (req, res, next) => {
   try {
-    const { paymentIntentId, orderId } = req.body;
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId } = req.body;
 
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    // verify signature — this confirms payment is genuine
+    const body      = razorpayOrderId + "|" + razorpayPaymentId;
+    const expected  = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest("hex");
 
-    if (paymentIntent.status !== "succeeded")
-      return next(new AppError("Payment not completed", 400, "PAYMENT_FAILED"));
+    if (expected !== razorpaySignature)
+      return next(new AppError("Payment verification failed", 400, "INVALID_SIGNATURE"));
 
     const order = await Order.findById(orderId);
     if (!order) return next(new AppError("Order not found", 404, "NOT_FOUND"));
 
-    order.paymentStatus  = "paid";
-    order.stripePaymentId = paymentIntentId;
-    order.orderStatus    = "confirmed";
-    order.statusHistory.push({ status: "confirmed", note: "Payment verified" });
+    order.paymentStatus    = "paid";
+    order.razorpayOrderId  = razorpayOrderId;
+    order.razorpayPaymentId = razorpayPaymentId;
+    order.orderStatus      = "confirmed";
+    order.statusHistory.push({ status: "confirmed", note: "Payment verified via Razorpay" });
     await order.save();
 
-    successResponse(res, 200, "Payment verified successfully", { order });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// @route   POST /api/payments/webhook
-// Raw body required — add express.raw() middleware before this route
-const stripeWebhook = async (req, res, next) => {
-  const sig = req.headers["stripe-signature"];
-
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    return res.status(400).json({ success: false, message: `Webhook error: ${err.message}` });
-  }
-
-  try {
-    switch (event.type) {
-      case "payment_intent.succeeded": {
-        const intent = event.data.object;
-        const order  = await Order.findById(intent.metadata.orderId);
-        if (order && order.paymentStatus !== "paid") {
-          order.paymentStatus   = "paid";
-          order.stripePaymentId = intent.id;
-          order.orderStatus     = "confirmed";
-          order.statusHistory.push({ status: "confirmed", note: "Payment succeeded via webhook" });
-          await order.save();
-        }
-        break;
-      }
-      case "payment_intent.payment_failed": {
-        const intent = event.data.object;
-        const order  = await Order.findById(intent.metadata.orderId);
-        if (order) {
-          order.paymentStatus = "failed";
-          order.statusHistory.push({ status: order.orderStatus, note: "Payment failed" });
-          await order.save();
-        }
-        break;
-      }
-      default:
-        break;
+    // send payment success email
+    try {
+      await sendPaymentSuccess({
+        email:     req.user.email,
+        name:      req.user.name,
+        order,
+        paymentId: razorpayPaymentId,
+      });
+    } catch (emailErr) {
+      console.error("Payment success email failed:", emailErr.message);
     }
 
-    res.json({ received: true });
+    successResponse(res, 200, "Payment verified successfully", { order });
   } catch (err) {
     next(err);
   }
@@ -118,12 +94,14 @@ const refundPayment = async (req, res, next) => {
 
     const order = await Order.findById(orderId);
     if (!order) return next(new AppError("Order not found", 404, "NOT_FOUND"));
-    if (!order.stripePaymentId)
+    if (!order.razorpayPaymentId)
       return next(new AppError("No payment found for this order", 400, "NO_PAYMENT"));
     if (order.paymentStatus === "refunded")
       return next(new AppError("Already refunded", 400, "ALREADY_REFUNDED"));
 
-    await stripe.refunds.create({ payment_intent: order.stripePaymentId });
+    await razorpay.payments.refund(order.razorpayPaymentId, {
+      amount: Math.round(order.totalAmount * 100),
+    });
 
     order.paymentStatus = "refunded";
     order.orderStatus   = "cancelled";
@@ -136,4 +114,4 @@ const refundPayment = async (req, res, next) => {
   }
 };
 
-module.exports = { createPaymentIntent, verifyPayment, stripeWebhook, refundPayment };
+module.exports = { createRazorpayOrder, verifyPayment, refundPayment };

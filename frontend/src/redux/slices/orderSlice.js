@@ -22,7 +22,7 @@ export const fetchOrder = createAsyncThunk("orders/fetchOne", async (id, { rejec
 export const createOrder = createAsyncThunk("orders/create", async (orderData, { rejectWithValue }) => {
   try {
     const data = await orderService.createOrder(orderData);
-    return data.data.order;
+    return data.data; // 👈 return full data not just data.data.order
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || "Failed to create order");
   }
